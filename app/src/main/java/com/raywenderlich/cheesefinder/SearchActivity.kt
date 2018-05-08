@@ -47,6 +47,8 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.functions.Cancellable
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_search.*
+import java.util.*
+import java.util.concurrent.TimeUnit
 
 class SearchActivity : AppCompatActivity() {
 
@@ -100,7 +102,6 @@ class SearchActivity : AppCompatActivity() {
                 override fun cancel() {
                     searchButton.setOnClickListener(null)
                 }
-
             })
 
         }
@@ -108,7 +109,7 @@ class SearchActivity : AppCompatActivity() {
 
     // shorter way to code
     fun createSearchButtonObservable(): Observable<String> {
-        return Observable.create { emitter ->
+        return Observable.create<String> { emitter ->
             searchButton.setOnClickListener {
                 //_ -> emitter.onNext(queryEditText.text.toString())
                 emitter.onNext(queryEditText.text.toString())
@@ -119,10 +120,12 @@ class SearchActivity : AppCompatActivity() {
                 searchButton.setOnClickListener(null)
             }
         }
+                .filter { it.isNotEmpty() }
+                .debounce(1, TimeUnit.SECONDS)
     }
 
     fun createTextChangeObservable(): Observable<String> {
-        return Observable.create { emitter ->
+        val observable = Observable.create<String> { emitter ->
             val textWatcher = object : TextWatcher {
                 override fun afterTextChanged(s: Editable?) {
                     // do nothing
@@ -133,8 +136,10 @@ class SearchActivity : AppCompatActivity() {
                 }
 
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                    Log.d("Search", "onTextChanged")
-                    s?.toString()?.let { emitter.onNext(it) }
+                    //Log.d("Search", "onTextChanged")
+                    s?.toString()?.let {
+                        emitter.onNext(it)
+                    }
                 }
             }
 
@@ -144,6 +149,10 @@ class SearchActivity : AppCompatActivity() {
                 queryEditText.removeTextChangedListener(textWatcher)
             }
         }
+
+        return observable
+                .filter { it.length >=1 }
+                .debounce(1, TimeUnit.SECONDS)
     }
 
     private var searchObservableDisposable: Disposable? = null
@@ -159,13 +168,17 @@ class SearchActivity : AppCompatActivity() {
         val searchObservable = Observable.merge<String>(searchButtonStream, textChangeStream)
 
         searchObservableDisposable = searchObservable
-                // In Android, all code that works with Views should execute on the main thread
+                // code that works with Views should execute on the main thread
                 .subscribeOn(AndroidSchedulers.mainThread())
+                // because of doOnNext{ } is in main thread, must change thread here
+                // else will crash
+                .observeOn(AndroidSchedulers.mainThread())
                 .doOnNext { showProgress() }
                 // move to io() for mapping
                 .observeOn(Schedulers.io())
                 .map {
                     //it -> searchEngine.search(it)
+                    Log.d("Search", "Search for $it ${Date().time / 1000}")
                     searchEngine.search(it)
                 }
                 // back to main thread to show result in subscribe { }
