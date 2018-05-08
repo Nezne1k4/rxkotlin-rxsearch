@@ -33,6 +33,7 @@ package com.raywenderlich.cheesefinder
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
+import android.util.Log
 import android.view.View
 import android.view.View.GONE
 import android.view.View.VISIBLE
@@ -40,6 +41,7 @@ import android.widget.Toast
 import io.reactivex.Observable
 import io.reactivex.ObservableEmitter
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 import io.reactivex.functions.Cancellable
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_search.*
@@ -107,7 +109,8 @@ class SearchActivity : AppCompatActivity() {
         return Observable.create { emitter ->
             searchButton.setOnClickListener {
                 //_ -> emitter.onNext(queryEditText.text.toString())
-                emitter.onNext(queryEditText.text.toString()) }
+                emitter.onNext(queryEditText.text.toString())
+            }
 
             // override cancel() when emitter cancels
             emitter.setCancellable {
@@ -117,21 +120,51 @@ class SearchActivity : AppCompatActivity() {
 
     }
 
+    private var searchObservableDisposable: Disposable? = null
+
     override fun onStart() {
         super.onStart()
-
+        Log.d("Search","onStart")
         // subcription
-        createSearchButtonObservable()
+        val searchButtonObservable = createSearchButtonObservable()
                 // In Android, all code that works with Views should execute on the main thread
                 .subscribeOn(AndroidSchedulers.mainThread())
+                .doOnNext { showProgress() }
                 // move to io() for mapping
                 .observeOn(Schedulers.io())
-                .map { //it -> searchEngine.search(it)
-                    searchEngine.search(it) }
+                .map {
+                    //it -> searchEngine.search(it)
+                    searchEngine.search(it)
+                }
                 // back to main thread to show result in subscribe { }
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe { showResult(it) }
 
+        searchObservableDisposable = searchButtonObservable.subscribe {
+            hideProgress()
+            showResult(it)
+        }
+
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.d("Search","onResume")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Log.d("Search","onStop")
+        searchObservableDisposable?.apply {
+            if (!this.isDisposed) {
+                Log.d("Search","searchObservableDisposable is disposed")
+                this.dispose()
+            }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Log.d("Search","onPause")
     }
 
 }
