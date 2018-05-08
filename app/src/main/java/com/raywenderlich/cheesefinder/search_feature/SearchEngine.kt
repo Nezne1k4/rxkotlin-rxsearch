@@ -28,7 +28,7 @@
  * THE SOFTWARE.
  */
 
-package com.raywenderlich.cheesefinder
+package com.raywenderlich.cheesefinder.search_feature
 
 class SearchEngine(private val cheeses: Array<String>) {
 

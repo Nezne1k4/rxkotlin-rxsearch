@@ -40,6 +40,10 @@ import android.view.View
 import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.widget.Toast
+import com.google.gson.Gson
+import com.raywenderlich.cheesefinder.data.Country
+import com.raywenderlich.cheesefinder.search_feature.SearchAdapter
+import com.raywenderlich.cheesefinder.search_feature.SearchEngine
 import io.reactivex.Observable
 import io.reactivex.ObservableEmitter
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -47,13 +51,29 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.functions.Cancellable
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_search.*
+import java.io.FileNotFoundException
 import java.util.*
 import java.util.concurrent.TimeUnit
+
+/**
+ * Reference: https://www.raywenderlich.com/170233/reactive-programming-rxandroid-kotlin-introduction
+ *
+ * Introduction to Rx with Kotlin:
+ * - define an observable (create with emitter)
+ * - turn asynchronous events like button clicks and text field context changes into observables
+ * - transform observable items (map, ...)
+ * - filter observable items (filter)
+ * - reduce backpressure with debounce(time)
+ * - combine several observables into one (merge, concat)
+ * - specify the thread on which code should be executed
+ */
 
 class SearchActivity : AppCompatActivity() {
 
     private lateinit var searchEngine: SearchEngine
     private val searchAdapter = SearchAdapter()
+
+    private var searchDisposable: Disposable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,9 +83,22 @@ class SearchActivity : AppCompatActivity() {
         searchResults.adapter = searchAdapter
 
         // init the searchEngine
-        searchEngine = SearchEngine(resources.getStringArray(R.array.cheeses))
-
-
+        try {
+            var countries: Array<String> = emptyArray()
+            val json = application.assets.open("countries.json").bufferedReader().use {
+                it.readText()
+            }
+            json?.apply {
+                countries = Gson().fromJson(json, Array<Country>::class.java)
+                        .map {
+                            String.format("${it.value} - ${it.label}")
+                        }.toTypedArray()
+            }
+            searchEngine = SearchEngine(countries)
+        } catch (e: FileNotFoundException) {
+            searchEngine = SearchEngine(resources.getStringArray(R.array.cheeses))
+            Toast.makeText(this, "Not found countries.json file, use cheeses instead", Toast.LENGTH_LONG).show()
+        }
     }
 
     protected fun showProgress() {
@@ -151,23 +184,21 @@ class SearchActivity : AppCompatActivity() {
         }
 
         return observable
-                .filter { it.length >=1 }
+                .filter { it.length >= 1 }
                 .debounce(1, TimeUnit.SECONDS)
     }
-
-    private var searchObservableDisposable: Disposable? = null
 
     override fun onStart() {
         super.onStart()
         Log.d("Search", "onStart")
-        // subcription
+        // stream
         val searchButtonStream = createSearchButtonObservable()
         val textChangeStream = createTextChangeObservable()
 
         // whatever comes first, it will emit
         val searchObservable = Observable.merge<String>(searchButtonStream, textChangeStream)
 
-        searchObservableDisposable = searchObservable
+        searchDisposable = searchObservable
                 // code that works with Views should execute on the main thread
                 .subscribeOn(AndroidSchedulers.mainThread())
                 // because of doOnNext{ } is in main thread, must change thread here
@@ -189,25 +220,15 @@ class SearchActivity : AppCompatActivity() {
                 }
     }
 
-    override fun onResume() {
-        super.onResume()
-        Log.d("Search", "onResume")
-    }
-
     override fun onStop() {
         super.onStop()
         Log.d("Search", "onStop")
-        searchObservableDisposable?.apply {
+        searchDisposable?.apply {
             if (!this.isDisposed) {
-                Log.d("Search", "searchObservableDisposable is disposed")
+                Log.d("Search", "searchDisposable is disposed")
                 this.dispose()
             }
         }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        Log.d("Search", "onPause")
     }
 
 }
