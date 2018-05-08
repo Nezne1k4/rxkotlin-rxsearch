@@ -30,30 +30,43 @@
 
 package com.raywenderlich.cheesefinder
 
-import android.support.v7.widget.RecyclerView
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import kotlinx.android.synthetic.main.list_item.view.*
+import android.os.Bundle
+import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.LinearLayoutManager
+import android.view.View.GONE
+import android.view.View.VISIBLE
+import android.widget.Toast
+import kotlinx.android.synthetic.main.activity_search.*
 
-class CheeseAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class SearchActivity : AppCompatActivity() {
 
-  var cheeses: List<String> = listOf()
-    set(value) {
-      field = value
-      notifyDataSetChanged()
+  private lateinit var searchEngine: SearchEngine
+  private val searchAdapter = SearchAdapter()
+
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    setContentView(R.layout.activity_search)
+
+    searchResults.layoutManager = LinearLayoutManager(this)
+    searchResults.adapter = searchAdapter
+
+    // init the searchEngine
+    searchEngine = SearchEngine(resources.getStringArray(R.array.cheeses))
+  }
+
+  protected fun showProgress() {
+    progressBar.visibility = VISIBLE
+  }
+
+  protected fun hideProgress() {
+    progressBar.visibility = GONE
+  }
+
+  protected fun showResult(result: List<String>) {
+    if (result.isEmpty()) {
+      Toast.makeText(this, R.string.nothing_found, Toast.LENGTH_SHORT).show()
     }
-
-  override fun getItemCount() = cheeses.size
-
-  override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-    holder.itemView.textView.text = cheeses[position]
+    searchAdapter.cheeses = result
   }
-
-  override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-    return ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.list_item, parent, false))
-  }
-
-  class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
 
 }
