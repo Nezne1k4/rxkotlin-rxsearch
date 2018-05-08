@@ -33,6 +33,8 @@ package com.raywenderlich.cheesefinder
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.view.View
 import android.view.View.GONE
@@ -117,16 +119,46 @@ class SearchActivity : AppCompatActivity() {
                 searchButton.setOnClickListener(null)
             }
         }
+    }
 
+    fun createTextChangeObservable(): Observable<String> {
+        return Observable.create { emitter ->
+            val textWatcher = object : TextWatcher {
+                override fun afterTextChanged(s: Editable?) {
+                    // do nothing
+                }
+
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+                    // do nothing
+                }
+
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                    Log.d("Search", "onTextChanged")
+                    s?.toString()?.let { emitter.onNext(it) }
+                }
+            }
+
+            queryEditText.addTextChangedListener(textWatcher)
+
+            emitter.setCancellable {
+                queryEditText.removeTextChangedListener(textWatcher)
+            }
+        }
     }
 
     private var searchObservableDisposable: Disposable? = null
 
     override fun onStart() {
         super.onStart()
-        Log.d("Search","onStart")
+        Log.d("Search", "onStart")
         // subcription
-        val searchButtonObservable = createSearchButtonObservable()
+        val searchButtonStream = createSearchButtonObservable()
+        val textChangeStream = createTextChangeObservable()
+
+        // whatever comes first, it will emit
+        val searchObservable = Observable.merge<String>(searchButtonStream, textChangeStream)
+
+        searchObservableDisposable = searchObservable
                 // In Android, all code that works with Views should execute on the main thread
                 .subscribeOn(AndroidSchedulers.mainThread())
                 .doOnNext { showProgress() }
@@ -138,25 +170,23 @@ class SearchActivity : AppCompatActivity() {
                 }
                 // back to main thread to show result in subscribe { }
                 .observeOn(AndroidSchedulers.mainThread())
-
-        searchObservableDisposable = searchButtonObservable.subscribe {
-            hideProgress()
-            showResult(it)
-        }
-
+                .subscribe {
+                    hideProgress()
+                    showResult(it)
+                }
     }
 
     override fun onResume() {
         super.onResume()
-        Log.d("Search","onResume")
+        Log.d("Search", "onResume")
     }
 
     override fun onStop() {
         super.onStop()
-        Log.d("Search","onStop")
+        Log.d("Search", "onStop")
         searchObservableDisposable?.apply {
             if (!this.isDisposed) {
-                Log.d("Search","searchObservableDisposable is disposed")
+                Log.d("Search", "searchObservableDisposable is disposed")
                 this.dispose()
             }
         }
@@ -164,7 +194,7 @@ class SearchActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        Log.d("Search","onPause")
+        Log.d("Search", "onPause")
     }
 
 }
