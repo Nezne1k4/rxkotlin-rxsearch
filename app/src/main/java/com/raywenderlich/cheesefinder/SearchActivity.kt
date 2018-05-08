@@ -33,40 +33,99 @@ package com.raywenderlich.cheesefinder
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
+import android.view.View
 import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.widget.Toast
+import io.reactivex.Observable
+import io.reactivex.ObservableEmitter
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.functions.Cancellable
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_search.*
 
 class SearchActivity : AppCompatActivity() {
 
-  private lateinit var searchEngine: SearchEngine
-  private val searchAdapter = SearchAdapter()
+    private lateinit var searchEngine: SearchEngine
+    private val searchAdapter = SearchAdapter()
 
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    setContentView(R.layout.activity_search)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_search)
 
-    searchResults.layoutManager = LinearLayoutManager(this)
-    searchResults.adapter = searchAdapter
+        searchResults.layoutManager = LinearLayoutManager(this)
+        searchResults.adapter = searchAdapter
 
-    // init the searchEngine
-    searchEngine = SearchEngine(resources.getStringArray(R.array.cheeses))
-  }
+        // init the searchEngine
+        searchEngine = SearchEngine(resources.getStringArray(R.array.cheeses))
 
-  protected fun showProgress() {
-    progressBar.visibility = VISIBLE
-  }
 
-  protected fun hideProgress() {
-    progressBar.visibility = GONE
-  }
-
-  protected fun showResult(result: List<String>) {
-    if (result.isEmpty()) {
-      Toast.makeText(this, R.string.nothing_found, Toast.LENGTH_SHORT).show()
     }
-    searchAdapter.cheeses = result
-  }
+
+    protected fun showProgress() {
+        progressBar.visibility = VISIBLE
+    }
+
+    protected fun hideProgress() {
+        progressBar.visibility = GONE
+    }
+
+    protected fun showResult(result: List<String>) {
+        if (result.isEmpty()) {
+            Toast.makeText(this, R.string.nothing_found, Toast.LENGTH_SHORT).show()
+        }
+        searchAdapter.cheeses = result
+    }
+
+    // 1. create Search button observe
+    fun createSearchButtonObservableLong(): Observable<String> {
+        return Observable.create { emitter: ObservableEmitter<String> ->
+            searchButton.setOnClickListener(View.OnClickListener { _: View? ->
+                emitter.onNext(queryEditText.text.toString())
+            })
+
+            /**
+             * Keeping references can cause memory leaks in Java or Kotlin.
+             * It’s a useful habit to remove listeners as soon as they are no longer needed.
+             * But what do you call when you are creating your own Observable?
+             * For that very reason, ObservableEmitter has setCancellable().
+             * Override cancel(), and your implementation will be called when the Observable is disposed,
+             * such as when the Observable is completed or all Observers have unsubscribed from it.
+             */
+            emitter.setCancellable(object : Cancellable {
+                override fun cancel() {
+                    searchButton.setOnClickListener(null)
+                }
+
+            })
+
+        }
+    }
+
+    // shorter way to code
+    fun createSearchButtonObservable(): Observable<String> {
+        return Observable.create { emitter ->
+            searchButton.setOnClickListener {
+                //_ -> emitter.onNext(queryEditText.text.toString())
+                emitter.onNext(queryEditText.text.toString()) }
+
+            // override cancel() when emitter cancels
+            emitter.setCancellable {
+                searchButton.setOnClickListener(null)
+            }
+        }
+
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        // subcription
+        createSearchButtonObservable()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { showResult(it) }
+
+    }
 
 }
