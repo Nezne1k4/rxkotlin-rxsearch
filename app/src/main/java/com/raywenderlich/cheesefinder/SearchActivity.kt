@@ -39,12 +39,14 @@ import android.util.Log
 import android.view.View
 import android.view.View.GONE
 import android.view.View.VISIBLE
+import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import com.google.gson.Gson
 import com.raywenderlich.cheesefinder.data.Country
 import com.raywenderlich.cheesefinder.search_feature.SearchAdapter
 import com.raywenderlich.cheesefinder.search_feature.SearchEngine
 import io.reactivex.Observable
+import io.reactivex.Observable.create
 import io.reactivex.ObservableEmitter
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
@@ -118,9 +120,9 @@ class SearchActivity : AppCompatActivity() {
 
     // 1. create Search button observe
     fun createSearchButtonObservableLong(): Observable<String> {
-        return Observable.create { emitter: ObservableEmitter<String> ->
+        return create { emitter: ObservableEmitter<String> ->
             searchButton.setOnClickListener(View.OnClickListener { _: View? ->
-                emitter.onNext(queryEditText.text.toString())
+                emitter.onNext(queryEditText.text.toString().trim())
             })
 
             /**
@@ -136,13 +138,12 @@ class SearchActivity : AppCompatActivity() {
                     searchButton.setOnClickListener(null)
                 }
             })
-
         }
     }
 
     // shorter way to code
     fun createSearchButtonObservable(): Observable<String> {
-        return Observable.create<String> { emitter ->
+        return create<String> { emitter ->
             searchButton.setOnClickListener {
                 //_ -> emitter.onNext(queryEditText.text.toString())
                 emitter.onNext(queryEditText.text.toString())
@@ -158,7 +159,7 @@ class SearchActivity : AppCompatActivity() {
     }
 
     fun createTextChangeObservable(): Observable<String> {
-        val observable = Observable.create<String> { emitter ->
+        val observable = create<String> { emitter ->
             val textWatcher = object : TextWatcher {
                 override fun afterTextChanged(s: Editable?) {
                     // do nothing
@@ -171,15 +172,28 @@ class SearchActivity : AppCompatActivity() {
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                     //Log.d("Search", "onTextChanged")
                     s?.toString()?.let {
-                        emitter.onNext(it)
+                        emitter.onNext(it.trim())
                     }
                 }
             }
 
             queryEditText.addTextChangedListener(textWatcher)
 
+            // for imeAction on keyboard
+            queryEditText.setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                    queryEditText?.text.toString().let {
+                        emitter.onNext(it.trim())
+                    }
+                    true
+                } else {
+                    false
+                }
+            }
+
             emitter.setCancellable {
                 queryEditText.removeTextChangedListener(textWatcher)
+                queryEditText.setOnEditorActionListener(null)
             }
         }
 
@@ -223,6 +237,8 @@ class SearchActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         Log.d("Search", "onStop")
+
+        // dispose to prevent leak
         searchDisposable?.apply {
             if (!this.isDisposed) {
                 Log.d("Search", "searchDisposable is disposed")

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Finder</string>
+    <string name="app_name">RxKotlinSearcher</string>
     <string name="nothing_found">No data found</string>
     <string name="search">search</string>
 </resources>

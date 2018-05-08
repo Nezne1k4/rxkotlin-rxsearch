@@ -26,7 +26,8 @@
         android:layout_marginStart="@dimen/default_margin"
         android:layout_toStartOf="@id/searchButton"
         android:inputType="text"
-        android:lines="1" />
+        android:lines="1"
+        android:imeOptions="actionSearch"/>
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/searchResults"
