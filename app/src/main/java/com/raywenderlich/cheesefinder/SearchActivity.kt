@@ -122,7 +122,13 @@ class SearchActivity : AppCompatActivity() {
 
         // subcription
         createSearchButtonObservable()
-                .subscribeOn(Schedulers.io())
+                // In Android, all code that works with Views should execute on the main thread
+                .subscribeOn(AndroidSchedulers.mainThread())
+                // move to io() for mapping
+                .observeOn(Schedulers.io())
+                .map { //it -> searchEngine.search(it)
+                    searchEngine.search(it) }
+                // back to main thread to show result in subscribe { }
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { showResult(it) }
 
