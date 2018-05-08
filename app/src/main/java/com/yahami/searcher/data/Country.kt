@@ -1,4 +1,4 @@
-package com.raywenderlich.cheesefinder.data
+package com.yahami.searcher.data
 
 import com.google.gson.annotations.SerializedName
 

@@ -28,13 +28,33 @@
  * THE SOFTWARE.
  */
 
-package com.raywenderlich.cheesefinder.search_feature
+package com.yahami.searcher.search_feature
 
-class SearchEngine(private val cheeses: Array<String>) {
+import android.support.v7.widget.RecyclerView
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import com.yahami.searcher.R
+import kotlinx.android.synthetic.main.list_item.view.*
 
-  fun search(query: String): List<String> {
-    Thread.sleep(2000)
-    return cheeses.filter { it.toLowerCase().contains(query.toLowerCase()) }
+class SearchAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+  var cheeses: List<String> = listOf()
+    set(value) {
+      field = value
+      notifyDataSetChanged()
+    }
+
+  override fun getItemCount() = cheeses.size
+
+  override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+    holder.itemView.textView.text = cheeses[position]
   }
+
+  override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    return ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.list_item, parent, false))
+  }
+
+  class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
 
 }

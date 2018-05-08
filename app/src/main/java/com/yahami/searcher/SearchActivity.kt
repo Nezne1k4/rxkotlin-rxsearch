@@ -28,7 +28,7 @@
  * THE SOFTWARE.
  */
 
-package com.raywenderlich.cheesefinder
+package com.yahami.searcher
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
@@ -42,9 +42,9 @@ import android.view.View.VISIBLE
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import com.google.gson.Gson
-import com.raywenderlich.cheesefinder.data.Country
-import com.raywenderlich.cheesefinder.search_feature.SearchAdapter
-import com.raywenderlich.cheesefinder.search_feature.SearchEngine
+import com.yahami.searcher.data.Country
+import com.yahami.searcher.search_feature.SearchAdapter
+import com.yahami.searcher.search_feature.SearchEngine
 import io.reactivex.Observable
 import io.reactivex.Observable.create
 import io.reactivex.ObservableEmitter
