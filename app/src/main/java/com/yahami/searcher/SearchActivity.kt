@@ -156,6 +156,7 @@ class SearchActivity : AppCompatActivity() {
         }
                 .filter { it.isNotEmpty() }
                 .debounce(1, TimeUnit.SECONDS)
+                .distinctUntilChanged() // notify only when text changed from the last one
     }
 
     fun createTextChangeObservable(): Observable<String> {
@@ -225,7 +226,9 @@ class SearchActivity : AppCompatActivity() {
                 .doOnNext { showProgress() }
                 // move to io() for mapping
                 .observeOn(Schedulers.io())
-                .flatMap { string -> Observable.fromIterable(string.split(" ")) }
+                //.flatMap { string -> Observable.fromIterable(string.split(" ")) }
+                //.switchMap { string -> Observable.fromIterable(string.split(" ")) }
+                .switchMap { Observable.just(it) } // if do not need to transfer data, just just(it)
                 .map {
                     //it -> searchEngine.search(it)
                     Log.d("Search", "Search for $it ${Date().time / 1000}")
