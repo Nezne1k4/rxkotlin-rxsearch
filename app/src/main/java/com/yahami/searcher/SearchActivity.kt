@@ -200,6 +200,7 @@ class SearchActivity : AppCompatActivity() {
         return observable
                 //.filter { it.length >= 1 } // move checking condition to searchEngine.search()
                 .debounce(1, TimeUnit.SECONDS)
+                .distinctUntilChanged() // notify only when text changed from the last one
     }
 
     override fun onStart() {
@@ -209,7 +210,10 @@ class SearchActivity : AppCompatActivity() {
         val searchButtonStream = createSearchButtonObservable()
         val textChangeStream = createTextChangeObservable()
 
-        // whatever comes first, it will emit
+        /**
+         * merge the sources
+         * whatever comes first, it will emit
+         */
         val searchObservable = Observable.merge<String>(searchButtonStream, textChangeStream)
 
         searchDisposable = searchObservable
@@ -221,6 +225,7 @@ class SearchActivity : AppCompatActivity() {
                 .doOnNext { showProgress() }
                 // move to io() for mapping
                 .observeOn(Schedulers.io())
+                .flatMap { string -> Observable.fromIterable(string.split(" ")) }
                 .map {
                     //it -> searchEngine.search(it)
                     Log.d("Search", "Search for $it ${Date().time / 1000}")
