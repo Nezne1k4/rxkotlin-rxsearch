@@ -35,16 +35,16 @@ import android.util.Log
 class SearchEngine(private val datalist: Array<String>) {
 
     fun search(query: String): List<String> {
-        if (!query.isNotEmpty()) {
+        if (!query.trim().isNotEmpty()) {
             return emptyList()
         }
         Thread.sleep(1000)
 
         val results: ArrayList<String> = arrayListOf()
 
-        val words = query.split(" ")
+        val words = query.trim().split(Regex("\\s+"))
         words.forEach {
-            Log.d("Search", "query $it")
+            Log.d("Search", "query '$it'")
             /*
             results.addAll(datalist.filter { string ->
                 string.toLowerCase().contains(it.toLowerCase())
