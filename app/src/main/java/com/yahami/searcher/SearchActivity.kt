@@ -179,7 +179,7 @@ class SearchActivity : AppCompatActivity() {
 
             queryEditText.addTextChangedListener(textWatcher)
 
-            // for imeAction on keyboard
+            // for imeActionSearch on keyboard
             queryEditText.setOnEditorActionListener { _, actionId, _ ->
                 if (actionId == EditorInfo.IME_ACTION_SEARCH) {
                     queryEditText?.text.toString().let {
@@ -198,7 +198,7 @@ class SearchActivity : AppCompatActivity() {
         }
 
         return observable
-                .filter { it.length >= 1 }
+                //.filter { it.length >= 1 } // move checking condition to searchEngine.search()
                 .debounce(1, TimeUnit.SECONDS)
     }
 
