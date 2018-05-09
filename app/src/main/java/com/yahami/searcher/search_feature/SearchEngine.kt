@@ -40,14 +40,23 @@ class SearchEngine(private val datalist: Array<String>) {
         }
         Thread.sleep(1000)
 
-        val results: MutableList<String> = mutableListOf()
+        val results: ArrayList<String> = arrayListOf()
 
         val words = query.split(" ")
         words.forEach {
             Log.d("Search", "query $it")
+            /*
             results.addAll(datalist.filter { string ->
                 string.toLowerCase().contains(it.toLowerCase())
             })
+            */
+            val temp = datalist.filter { string -> string.toLowerCase().contains(it.toLowerCase()) }
+            Log.d("Search", "> temp size ${temp.size}")
+            temp.forEach {
+                results.addAll(temp.filter {
+                    !results.contains(it)
+                })
+            }
         }
 
         return results
