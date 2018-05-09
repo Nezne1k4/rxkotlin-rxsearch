@@ -45,18 +45,18 @@ class SearchEngine(private val datalist: Array<String>) {
         val words = query.trim().split(Regex("\\s+"))
         words.forEach {
             Log.d("Search", "query '$it'")
-            /*
+
             results.addAll(datalist.filter { string ->
                 string.toLowerCase().contains(it.toLowerCase())
+            }.filter {
+                // not the duplicated elements
+                !results.contains(it)
             })
-            */
-            val temp = datalist.filter { string -> string.toLowerCase().contains(it.toLowerCase()) }
-            Log.d("Search", "> temp size ${temp.size}")
-            temp.forEach {
-                results.addAll(temp.filter {
-                    !results.contains(it)
-                })
-            }
+
+            /**
+             * Actually tried zip and union but do not get job done,
+             * so must use addAll( filteredList.filter { } )
+             */
         }
 
         return results
