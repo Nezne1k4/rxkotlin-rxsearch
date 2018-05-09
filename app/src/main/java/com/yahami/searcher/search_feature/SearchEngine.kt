@@ -40,25 +40,45 @@ class SearchEngine(private val datalist: Array<String>) {
         }
         Thread.sleep(1000)
 
-        val results: ArrayList<String> = arrayListOf()
+        var results: MutableList<String> = mutableListOf()
+        when (query.contains("+")) {
+            true -> { // only common search results
+                val words = query.trim().split(Regex("\\+"))
+                        .filter { it.isNotEmpty() }
+                        .map { it.trim() }
+                if (words.isEmpty()) {
+                    return emptyList()
+                }
+                results = datalist.toMutableList()
+                words.forEach {
+                    if (it.isNotEmpty()) {
+                        Log.d("Search", "query '$it'")
+                        results = results
+                                .intersect(datalist.filter { string ->
+                                    string.toLowerCase().contains(it.toLowerCase())
+                                }).toMutableList()
+                    }
+                }
+            }
 
-        val words = query.trim().split(Regex("\\s+"))
-        words.forEach {
-            Log.d("Search", "query '$it'")
+            false -> { // combine all search results
+                val words = query.trim().split(Regex("\\s+"))
+                words.forEach {
+                    Log.d("Search", "query '$it'")
 
-            results.addAll(datalist.filter { string ->
-                string.toLowerCase().contains(it.toLowerCase())
-            }.filter {
-                // not the duplicated elements
-                !results.contains(it)
-            })
-
-            /**
-             * Actually tried zip and union but do not get job done,
-             * so must use addAll( filteredList.filter { } )
-             */
+                    results.addAll(datalist.filter { string ->
+                        string.toLowerCase().contains(it.toLowerCase())
+                    }.filter {
+                        // not the duplicated elements
+                        !results.contains(it)
+                    })
+                    /**
+                     * Actually tried zip and union but do not get job done,
+                     * so must use addAll( filteredList.filter { } )
+                     */
+                }
+            }
         }
-
         return results
     }
 }

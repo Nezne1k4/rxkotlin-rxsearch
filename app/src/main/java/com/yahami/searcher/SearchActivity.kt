@@ -226,8 +226,8 @@ class SearchActivity : AppCompatActivity() {
                 .doOnNext { showProgress() }
                 // move to io() for mapping
                 .observeOn(Schedulers.io())
-                //.flatMap { string -> Observable.fromIterable(string.split(" ")) }
-                //.switchMap { string -> Observable.fromIterable(string.split(" ")) }
+                //.flatMap { string -> Observable.fromIterable(string.split(" ")) } // not work
+                //.switchMap { string -> Observable.fromIterable(string.split(" ")) } // not work
                 /**
                  * Searching through items by query.
                  * Lest assume that user inputs letters: ‘x’ then ‘y’.

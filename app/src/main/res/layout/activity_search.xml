@@ -27,6 +27,7 @@
         android:layout_toStartOf="@id/searchButton"
         android:inputType="text"
         android:lines="1"
+        android:hint="Use '+' to combine and ' ' for all variants"
         android:imeOptions="actionSearch"/>
 
     <android.support.v7.widget.RecyclerView
