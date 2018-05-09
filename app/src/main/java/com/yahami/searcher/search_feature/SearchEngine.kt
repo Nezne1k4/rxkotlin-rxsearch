@@ -30,13 +30,26 @@
 
 package com.yahami.searcher.search_feature
 
-class SearchEngine(private val cheeses: Array<String>) {
+import android.util.Log
+
+class SearchEngine(private val datalist: Array<String>) {
 
     fun search(query: String): List<String> {
         if (!query.isNotEmpty()) {
             return emptyList()
         }
         Thread.sleep(1000)
-        return cheeses.filter { it.toLowerCase().contains(query.toLowerCase()) }
+
+        val results: MutableList<String> = mutableListOf()
+
+        val words = query.split(" ")
+        words.forEach {
+            Log.d("Search", "query $it")
+            results.addAll(datalist.filter { string ->
+                string.toLowerCase().contains(it.toLowerCase())
+            })
+        }
+
+        return results
     }
 }

@@ -228,6 +228,12 @@ class SearchActivity : AppCompatActivity() {
                 .observeOn(Schedulers.io())
                 //.flatMap { string -> Observable.fromIterable(string.split(" ")) }
                 //.switchMap { string -> Observable.fromIterable(string.split(" ")) }
+                /**
+                 * Searching through items by query.
+                 * Lest assume that user inputs letters: ‘x’ then ‘y’.
+                 * The whole query is now ‘xy’ so there is no need to be subscribed
+                 * for results with the letter ‘x’. In this case we can safely use switchMap.
+                 */
                 .switchMap { Observable.just(it) } // if do not need to transfer data, just just(it)
                 .map {
                     //it -> searchEngine.search(it)
