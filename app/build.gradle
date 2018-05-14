@@ -18,6 +18,10 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    testOptions {
+        // let Log while testing
+        unitTests.returnDefaultValues = true
+    }
 }
 
 dependencies {
@@ -33,6 +37,13 @@ dependencies {
 
     // GSon
     implementation "com.google.code.gson:gson:$rxandroid_gson"
+
+    // test
+    testImplementation 'junit:junit:4.12'
+    //androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    //androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+
+
 }
 
 repositories {
