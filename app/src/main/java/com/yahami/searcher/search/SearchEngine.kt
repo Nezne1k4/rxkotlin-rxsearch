@@ -28,11 +28,11 @@
  * THE SOFTWARE.
  */
 
-package com.yahami.searcher.search_feature
+package com.yahami.searcher.search
 
 import android.util.Log
 
-class SearchEngine(private val datalist: Array<String>) {
+class SearchEngine(val datalist: Array<String>) {
 
     fun search(query: String): List<String> {
         if (!query.trim().isNotEmpty()) {

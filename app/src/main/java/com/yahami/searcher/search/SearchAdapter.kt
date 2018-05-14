@@ -28,7 +28,7 @@
  * THE SOFTWARE.
  */
 
-package com.yahami.searcher.search_feature
+package com.yahami.searcher.search
 
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
@@ -39,16 +39,16 @@ import kotlinx.android.synthetic.main.list_item.view.*
 
 class SearchAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-  var cheeses: List<String> = listOf()
+  var datalist: List<String> = listOf()
     set(value) {
       field = value
       notifyDataSetChanged()
     }
 
-  override fun getItemCount() = cheeses.size
+  override fun getItemCount() = datalist.size
 
   override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-    holder.itemView.textView.text = cheeses[position]
+    holder.itemView.textView.text = datalist[position]
   }
 
   override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {

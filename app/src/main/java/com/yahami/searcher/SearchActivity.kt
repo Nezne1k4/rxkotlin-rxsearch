@@ -43,13 +43,13 @@ import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import com.google.gson.Gson
 import com.yahami.searcher.data.Country
-import com.yahami.searcher.search_feature.SearchAdapter
-import com.yahami.searcher.search_feature.SearchEngine
+import com.yahami.searcher.search.SearchAdapter
+import com.yahami.searcher.search.SearchEngine
 import io.reactivex.Observable
-import io.reactivex.Observable.create
 import io.reactivex.ObservableEmitter
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import io.reactivex.exceptions.UndeliverableException
 import io.reactivex.functions.Cancellable
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_search.*
@@ -87,7 +87,12 @@ class SearchActivity : AppCompatActivity() {
         // init the searchEngine
         try {
             var countries: Array<String> = emptyArray()
-            val json = application.assets.open("countries.json").bufferedReader().use {
+
+            // load data from 'assets'
+            //val json = application.assets.open("countries.json").bufferedReader().use {
+
+            // load data from 'resources'
+            val json = javaClass.classLoader.getResourceAsStream(("countries.json")).bufferedReader().use {
                 it.readText()
             }
             json?.apply {
@@ -115,12 +120,12 @@ class SearchActivity : AppCompatActivity() {
         if (result.isEmpty()) {
             Toast.makeText(this, R.string.nothing_found, Toast.LENGTH_SHORT).show()
         }
-        searchAdapter.cheeses = result
+        searchAdapter.datalist = result
     }
 
     // 1. create Search button observe
-    fun createSearchButtonObservableLong(): Observable<String> {
-        return create { emitter: ObservableEmitter<String> ->
+    private fun createSearchButtonObservableLong(): Observable<String> {
+        return Observable.create { emitter: ObservableEmitter<String> ->
             searchButton.setOnClickListener(View.OnClickListener { _: View? ->
                 emitter.onNext(queryEditText.text.toString().trim())
             })
@@ -142,16 +147,24 @@ class SearchActivity : AppCompatActivity() {
     }
 
     // shorter way to code
-    fun createSearchButtonObservable(): Observable<String> {
-        return create<String> { emitter ->
-            searchButton.setOnClickListener {
-                //_ -> emitter.onNext(queryEditText.text.toString())
-                emitter.onNext(queryEditText.text.toString())
-            }
+    private fun createSearchButtonObservable(): Observable<String> {
+        return Observable.create<String> { emitter ->
+            try {
+                searchButton.setOnClickListener {
+                    //_ -> emitter.onNext(queryEditText.text.toString())
+                    emitter.onNext(queryEditText.text.toString())
+                }
 
-            // override cancel() when emitter cancels
-            emitter.setCancellable {
-                searchButton.setOnClickListener(null)
+                // override cancel() when emitter cancels
+                emitter.setCancellable {
+                    searchButton.setOnClickListener(null)
+                }
+            } catch (ex: UndeliverableException) {
+                // https://medium.com/@amanshuraikwar.in/dont-use-observable-fromcallable-b36b32cb2783
+                // if this Observable is disposed before it could finish it’s job,
+                // no matter how many exceptions it still occurs UndeliverableException
+                ex.printStackTrace()
+                emitter.tryOnError(ex)
             }
         }
                 .filter { it.isNotEmpty() }
@@ -159,42 +172,48 @@ class SearchActivity : AppCompatActivity() {
                 .distinctUntilChanged() // notify only when text changed from the last one
     }
 
-    fun createTextChangeObservable(): Observable<String> {
-        val observable = create<String> { emitter ->
-            val textWatcher = object : TextWatcher {
-                override fun afterTextChanged(s: Editable?) {
-                    // do nothing
-                }
+    private fun createTextChangeObservable(): Observable<String> {
+        val observable = Observable.create<String> { emitter ->
+            try {
+                val textWatcher = object : TextWatcher {
+                    override fun afterTextChanged(s: Editable?) {
+                        // do nothing
+                    }
 
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-                    // do nothing
-                }
+                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+                        // do nothing
+                    }
 
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                    //Log.d("Search", "onTextChanged")
-                    s?.toString()?.let {
-                        emitter.onNext(it.trim())
+                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                        //Log.d("Search", "onTextChanged")
+                        s?.toString()?.let {
+                            emitter.onNext(it.trim())
+                        }
                     }
                 }
-            }
 
-            queryEditText.addTextChangedListener(textWatcher)
+                queryEditText.addTextChangedListener(textWatcher)
 
-            // for imeActionSearch on keyboard
-            queryEditText.setOnEditorActionListener { _, actionId, _ ->
-                if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                    queryEditText?.text.toString().let {
-                        emitter.onNext(it.trim())
+                // for imeActionSearch on keyboard
+                queryEditText.setOnEditorActionListener { _, actionId, _ ->
+                    if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                        queryEditText?.text.toString().let {
+                            emitter.onNext(it.trim())
+                        }
+                        true
+                    } else {
+                        false
                     }
-                    true
-                } else {
-                    false
                 }
-            }
 
-            emitter.setCancellable {
-                queryEditText.removeTextChangedListener(textWatcher)
-                queryEditText.setOnEditorActionListener(null)
+                // emitter must be cancelled
+                emitter.setCancellable {
+                    queryEditText.removeTextChangedListener(textWatcher)
+                    queryEditText.setOnEditorActionListener(null)
+                }
+            } catch (ex: UndeliverableException) {
+                ex.printStackTrace()
+                emitter.tryOnError(ex)
             }
         }
 
